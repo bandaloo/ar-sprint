@@ -2,6 +2,8 @@ import * as handTrack from "handtrackjs";
 
 const EYE_WIDTH_SCALAR = 0.3;
 const EYE_HEIGHT_RATIO = 0.5;
+const PARTICLE_SPEED = 3;
+const PARTICLE_SIZE = 0.1;
 
 const video = createVideo({ video: true });
 let model = null;
@@ -78,18 +80,63 @@ function drawEye(x, y, width) {
   context.fill();
 }
 
+class Particle {
+  constructor(x, y, size) {
+    this.x = x;
+    this.y = y;
+    this.size = size;
+
+    this.vx = (Math.random() - 0.5) * PARTICLE_SPEED;
+    this.vy = (0.5 + Math.random() * 0.5) * PARTICLE_SPEED;
+  }
+
+  speed() {
+    return Math.sqrt(this.vx ** 2 + this.vy ** 2);
+  }
+
+  draw() {
+    const rad = this.size * this.speed() * PARTICLE_SIZE;
+    context.fillStyle = "black";
+    context.beginPath();
+    context.ellipse(this.x, this.y, rad, rad, 0, 0, 2 * Math.PI);
+    context.fill();
+  }
+
+  step() {
+    this.x += this.vx;
+    this.y += this.vy;
+    this.vx *= 0.95;
+    this.vy *= 0.95;
+  }
+}
+
+/** @type {Particle[]} */
+let particles = [];
+
 function render(time) {
   context.save();
   context.translate(canvas.width, 0);
   context.scale(-1, 1);
   context.drawImage(video, 0, 0);
   context.restore();
+
+  particles = particles.filter((p) => p.speed() > 0.1);
+
+  for (const p of particles) {
+    p.step();
+    p.draw();
+  }
+
   for (const p of currPredictions) {
+    if (p.label !== "face" && p.label !== "open") continue;
     const [x, y, w, h] = p.bbox;
+    const [xc, yc] = [x + w / 2, y + h / 2];
+    particles.push(new Particle(xc, yc, w));
     //context.fillStyle = "#f006";
     //context.fillRect(x, y, w, h);
-    drawEye(x + w / 2, y + h / 2, w * EYE_WIDTH_SCALAR);
+    drawEye(xc, yc, w * EYE_WIDTH_SCALAR);
   }
+
   requestAnimationFrame(render);
 }
 
