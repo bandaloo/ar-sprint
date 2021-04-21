@@ -1,5 +1,8 @@
 import * as handTrack from "handtrackjs";
 
+const EYE_WIDTH_SCALAR = 0.3;
+const EYE_HEIGHT_RATIO = 0.5;
+
 const video = createVideo({ video: true });
 let model = null;
 
@@ -37,7 +40,6 @@ const modelParams = {
 
 function startVideo() {
   handTrack.startVideo(video).then(function (status) {
-    console.log("video started", status);
     video.style.height = "";
     runDetection();
   });
@@ -53,27 +55,40 @@ score: "0.96"
 function runDetection() {
   if (model === null) throw new Error("model was null");
   model.detect(video).then((predictions) => {
-    //console.log("Predictions: ", predictions);
-    //model.renderPredictions(predictions, canvas, context, video);
     currPredictions = predictions;
     requestAnimationFrame(runDetection);
   });
 }
 
-console.log("test");
+function drawEye(x, y, width) {
+  const gradient = context.createRadialGradient(
+    x,
+    y,
+    width / 4,
+    x,
+    y,
+    width / 2
+  );
+  gradient.addColorStop(0, "black");
+  gradient.addColorStop(1, "red");
+
+  context.fillStyle = gradient;
+  context.beginPath();
+  context.ellipse(x, y, width, width * EYE_HEIGHT_RATIO, 0, 0, 2 * Math.PI);
+  context.fill();
+}
 
 function render(time) {
-  console.log(time);
   context.save();
   context.translate(canvas.width, 0);
   context.scale(-1, 1);
   context.drawImage(video, 0, 0);
   context.restore();
   for (const p of currPredictions) {
-    console.log(p);
     const [x, y, w, h] = p.bbox;
-    context.fillStyle = "#f006";
-    context.fillRect(x, y, w, h);
+    //context.fillStyle = "#f006";
+    //context.fillRect(x, y, w, h);
+    drawEye(x + w / 2, y + h / 2, w * EYE_WIDTH_SCALAR);
   }
   requestAnimationFrame(render);
 }
@@ -83,8 +98,6 @@ requestAnimationFrame(render);
 // Load the model.
 handTrack.load(modelParams).then((lmodel) => {
   // detect objects in the image.
-  console.log(lmodel);
   model = lmodel;
-  console.log(model);
   startVideo();
 });
