@@ -10,7 +10,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "handtrackjs": "^0.1.2"
+    "handtrackjs": "^0.1.2",
+    "howler": "^2.2.1",
+    "tone": "^14.7.77"
   },
   "devDependencies": {
     "webpack": "^5.35.0",
